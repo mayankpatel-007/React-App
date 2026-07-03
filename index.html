@@ -1,13 +1,517 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Testing</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Daily Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:      #f2efe4;
+    --paper-line: #cfc6ac;
+    --ink:        #1e2a33;
+    --ink-soft:   #5b6670;
+    --teal:       #2f6f5e;
+    --teal-soft:  #dce8e2;
+    --mustard:    #b9832a;
+    --rust:       #a1453f;
+    --card-shadow: 0 30px 60px -25px rgba(30,42,51,0.35);
+  }
+
+  *{ box-sizing:border-box; }
+
+  body{
+    margin:0;
+    min-height:100vh;
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    padding:56px 20px 80px;
+    background:
+      radial-gradient(circle at 15% 10%, rgba(47,111,94,0.07), transparent 40%),
+      radial-gradient(circle at 85% 90%, rgba(185,131,42,0.08), transparent 45%),
+      #e7e1d1;
+    font-family:'IBM Plex Mono', monospace;
+    color:var(--ink);
+  }
+
+  .ledger{
+    width:100%;
+    max-width:560px;
+    background:var(--paper);
+    border-radius:6px;
+    box-shadow:var(--card-shadow);
+    position:relative;
+    overflow:hidden;
+    border:1px solid rgba(30,42,51,0.08);
+  }
+
+  /* perforated top edge */
+  .ledger::before{
+    content:"";
+    position:absolute;
+    top:0; left:0; right:0;
+    height:14px;
+    background-image: radial-gradient(circle, #e7e1d1 5px, transparent 5.5px);
+    background-size: 22px 22px;
+    background-position: 0 -7px;
+    background-repeat: repeat-x;
+  }
+
+  .binding{
+    position:absolute;
+    left:0; top:0; bottom:0;
+    width:46px;
+    background: repeating-linear-gradient(
+      180deg,
+      transparent 0 18px,
+      rgba(30,42,51,0.06) 18px 19px
+    );
+    border-right:1px dashed var(--paper-line);
+  }
+
+  header{
+    padding:44px 40px 26px 78px;
+    position:relative;
+  }
+
+  .eyebrow{
+    font-size:11px;
+    letter-spacing:.16em;
+    text-transform:uppercase;
+    color:var(--teal);
+    font-weight:600;
+    margin:0 0 10px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .eyebrow::before{
+    content:"";
+    width:16px; height:1px;
+    background:var(--teal);
+    display:inline-block;
+  }
+
+  h1{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:38px;
+    line-height:1.05;
+    margin:0 0 6px;
+    letter-spacing:-0.01em;
+  }
+
+  .date{
+    font-size:12.5px;
+    color:var(--ink-soft);
+    margin:0;
+  }
+
+  .stamp{
+    position:absolute;
+    top:38px;
+    right:36px;
+    font-family:'Fraunces', serif;
+    font-style:italic;
+    font-size:12px;
+    color:var(--rust);
+    border:1.4px solid var(--rust);
+    border-radius:50%;
+    width:64px; height:64px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    line-height:1.15;
+    transform:rotate(-11deg);
+    opacity:.75;
+    pointer-events:none;
+    transition:opacity .4s ease, transform .4s ease;
+  }
+  .stamp.hide{ opacity:0; transform:rotate(-11deg) scale(.7); }
+
+  .add-row{
+    margin:0 40px 8px 78px;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    border-bottom:1.5px solid var(--ink);
+    padding-bottom:10px;
+  }
+
+  .add-row input{
+    flex:1;
+    border:none;
+    background:transparent;
+    outline:none;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:15px;
+    color:var(--ink);
+    padding:4px 2px;
+  }
+  .add-row input::placeholder{ color:#9a9384; }
+
+  .add-btn{
+    width:30px; height:30px;
+    border-radius:50%;
+    border:1.4px solid var(--ink);
+    background:var(--ink);
+    color:var(--paper);
+    font-size:17px;
+    line-height:1;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:transform .15s ease, background .2s ease;
+    flex-shrink:0;
+  }
+  .add-btn:hover{ transform:scale(1.08); background:var(--teal); border-color:var(--teal); }
+  .add-btn:active{ transform:scale(.94); }
+
+  .tabs{
+    display:flex;
+    gap:4px;
+    margin:22px 40px 4px 78px;
+  }
+  .tab{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    padding:6px 13px;
+    border:1px solid var(--paper-line);
+    border-bottom:none;
+    border-radius:5px 5px 0 0;
+    background:rgba(30,42,51,0.03);
+    color:var(--ink-soft);
+    cursor:pointer;
+    transition:all .2s ease;
+  }
+  .tab.active{
+    background:var(--paper);
+    color:var(--ink);
+    border-color:var(--ink);
+    font-weight:600;
+  }
+
+  ul.list{
+    list-style:none;
+    margin:0 40px 0 0;
+    padding:14px 0 6px 78px;
+    border-top:1px solid var(--ink);
+    min-height:120px;
+  }
+
+  li.item{
+    display:flex;
+    align-items:flex-start;
+    gap:14px;
+    padding:13px 0;
+    border-bottom:1px dashed var(--paper-line);
+    animation: fadeIn .35s ease;
+  }
+  li.item.exit{
+    animation: fadeOut .28s ease forwards;
+  }
+  @keyframes fadeIn{
+    from{ opacity:0; transform:translateY(-6px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
+  @keyframes fadeOut{
+    to{ opacity:0; transform:translateX(14px); height:0; padding:0; margin:0; border:none; }
+  }
+
+  .box{
+    width:20px; height:20px;
+    border:1.6px solid var(--ink);
+    border-radius:4px;
+    flex-shrink:0;
+    margin-top:2px;
+    cursor:pointer;
+    position:relative;
+    background:transparent;
+    transition:background .2s ease, border-color .2s ease;
+  }
+  .box.checked{
+    background:var(--teal);
+    border-color:var(--teal);
+  }
+  .box svg{
+    position:absolute;
+    top:1px; left:1px;
+    width:16px; height:16px;
+    stroke:var(--paper);
+    stroke-width:2.4;
+    fill:none;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+    stroke-dasharray:24;
+    stroke-dashoffset:24;
+  }
+  .box.checked svg{
+    animation: draw .32s ease forwards .05s;
+  }
+  @keyframes draw{
+    to{ stroke-dashoffset:0; }
+  }
+
+  .item-body{ flex:1; min-width:0; }
+
+  .item-text{
+    font-size:14.5px;
+    line-height:1.4;
+    color:var(--ink);
+    word-break:break-word;
+    position:relative;
+    transition:color .3s ease;
+  }
+  .item-text::after{
+    content:"";
+    position:absolute;
+    left:0; top:50%;
+    width:0;
+    height:1.3px;
+    background:var(--ink-soft);
+    transition:width .35s ease;
+  }
+  li.item.done .item-text{ color:var(--ink-soft); }
+  li.item.done .item-text::after{ width:100%; }
+
+  .meta{
+    display:flex;
+    gap:8px;
+    margin-top:6px;
+  }
+  .chip{
+    font-size:10px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    padding:2px 8px;
+    border-radius:20px;
+    font-weight:600;
+  }
+  .chip.high{ background:#f4e3d6; color:var(--rust); }
+  .chip.normal{ background:var(--teal-soft); color:var(--teal); }
+  .chip.low{ background:#ece7d9; color:var(--ink-soft); }
+
+  .erase{
+    background:none;
+    border:none;
+    cursor:pointer;
+    color:var(--paper-line);
+    font-size:16px;
+    padding:2px 4px;
+    flex-shrink:0;
+    transition:color .2s ease, transform .2s ease;
+    margin-top:1px;
+  }
+  .erase:hover{ color:var(--rust); transform:scale(1.15) rotate(8deg); }
+
+  .empty{
+    text-align:center;
+    padding:36px 20px 44px;
+    color:var(--ink-soft);
+    font-size:13px;
+    font-style:italic;
+    font-family:'Fraunces', serif;
+  }
+
+  footer{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:16px 40px 30px 78px;
+    font-size:11.5px;
+    color:var(--ink-soft);
+  }
+  footer button{
+    background:none;
+    border:none;
+    color:var(--rust);
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11.5px;
+    text-decoration:underline;
+    text-underline-offset:3px;
+    cursor:pointer;
+    padding:0;
+  }
+  footer button:hover{ color:var(--ink); }
+  footer button:disabled{ color:var(--paper-line); text-decoration:none; cursor:default; }
+
+  @media (max-width:480px){
+    header, .add-row, .tabs, ul.list, footer{
+      padding-left:36px;
+    }
+    .binding{ width:26px; }
+    h1{ font-size:30px; }
+    .stamp{ display:none; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation:none !important; transition:none !important; }
+  }
+</style>
 </head>
 <body>
-    <h1>Testing the react app deploment</h1>
-    <h2 style="background-color: blue; color: brown;">Testing</h2>
-    <Script src="Script.js"></Script>
+
+<div class="ledger">
+  <div class="binding"></div>
+
+  <header>
+    <p class="eyebrow">The Daily Ledger</p>
+    <h1>Today's List</h1>
+    <p class="date" id="dateLine"></p>
+    <div class="stamp" id="stamp">all<br>squared</div>
+  </header>
+
+  <div class="add-row">
+    <input type="text" id="taskInput" placeholder="Enter a new line item…" maxlength="140">
+    <button class="add-btn" id="addBtn" aria-label="Add task">+</button>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" data-filter="all">All</div>
+    <div class="tab" data-filter="active">Open</div>
+    <div class="tab" data-filter="done">Settled</div>
+  </div>
+
+  <ul class="list" id="list"></ul>
+
+  <footer>
+    <span id="countLine">0 open items</span>
+    <button id="clearBtn" disabled>Clear settled</button>
+  </footer>
+</div>
+
+<script>
+  const list = document.getElementById('list');
+  const taskInput = document.getElementById('taskInput');
+  const addBtn = document.getElementById('addBtn');
+  const countLine = document.getElementById('countLine');
+  const clearBtn = document.getElementById('clearBtn');
+  const stamp = document.getElementById('stamp');
+  const tabs = document.querySelectorAll('.tab');
+
+  const dateLine = document.getElementById('dateLine');
+  dateLine.textContent = new Date().toLocaleDateString('en-US', {
+    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
+  });
+
+  let items = [
+    { id: 1, text: 'Sketch the weekly ledger layout', done: true,  priority: 'normal' },
+    { id: 2, text: 'Reply to the printer about card stock', done: false, priority: 'high' },
+    { id: 3, text: 'Water the office plants', done: false, priority: 'low' },
+  ];
+  let nextId = 4;
+  let filter = 'all';
+
+  function checkIcon(){
+    return '<svg viewBox="0 0 16 16"><polyline points="3,8.5 6.5,12 13,4"></polyline></svg>';
+  }
+
+  function render(){
+    list.innerHTML = '';
+
+    const visible = items.filter(i => {
+      if(filter === 'active') return !i.done;
+      if(filter === 'done') return i.done;
+      return true;
+    });
+
+    if(visible.length === 0){
+      const msg = items.length === 0
+        ? 'The page is blank. Write down what needs doing.'
+        : 'Nothing here — try another tab.';
+      list.innerHTML = `<li class="empty" style="list-style:none">${msg}</li>`;
+    } else {
+      visible.forEach(item => {
+        const li = document.createElement('li');
+        li.className = 'item' + (item.done ? ' done' : '');
+        li.dataset.id = item.id;
+        li.innerHTML = `
+          <div class="box ${item.done ? 'checked' : ''}" role="checkbox" aria-checked="${item.done}">
+            ${checkIcon()}
+          </div>
+          <div class="item-body">
+            <div class="item-text">${escapeHtml(item.text)}</div>
+            <div class="meta"><span class="chip ${item.priority}">${item.priority}</span></div>
+          </div>
+          <button class="erase" aria-label="Remove task">✕</button>
+        `;
+        list.appendChild(li);
+      });
+    }
+
+    const openCount = items.filter(i => !i.done).length;
+    countLine.textContent = `${openCount} open item${openCount === 1 ? '' : 's'}`;
+
+    const doneCount = items.filter(i => i.done).length;
+    clearBtn.disabled = doneCount === 0;
+
+    stamp.classList.toggle('hide', !(items.length > 0 && openCount === 0));
+  }
+
+  function escapeHtml(str){
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function addTask(){
+    const val = taskInput.value.trim();
+    if(!val) return;
+    const priorities = ['normal', 'high', 'low'];
+    const priority = priorities[Math.floor(Math.random() * priorities.length)];
+    items.unshift({ id: nextId++, text: val, done: false, priority });
+    taskInput.value = '';
+    render();
+  }
+
+  addBtn.addEventListener('click', addTask);
+  taskInput.addEventListener('keydown', e => {
+    if(e.key === 'Enter') addTask();
+  });
+
+  list.addEventListener('click', e => {
+    const li = e.target.closest('li.item');
+    if(!li) return;
+    const id = Number(li.dataset.id);
+
+    if(e.target.closest('.box')){
+      const item = items.find(i => i.id === id);
+      item.done = !item.done;
+      render();
+    }
+
+    if(e.target.closest('.erase')){
+      li.classList.add('exit');
+      setTimeout(() => {
+        items = items.filter(i => i.id !== id);
+        render();
+      }, 260);
+    }
+  });
+
+  clearBtn.addEventListener('click', () => {
+    items = items.filter(i => !i.done);
+    render();
+  });
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      filter = tab.dataset.filter;
+      render();
+    });
+  });
+
+  render();
+</script>
+
 </body>
 </html>
